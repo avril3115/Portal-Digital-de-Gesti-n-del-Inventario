@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2>Dashboard</h2>
+
+<!-- Pestañas para admin o acción de usuario -->
+<div id="tabs">
+  {% if session.role == 'admin' %}
+    <a href="{{ url_for('view_purchase_requests') }}">Solicitudes de Compra ({{ pr_count }})</a> |
+    <a href="{{ url_for('view_removal_requests') }}">Baja de Equipos ({{ removal_count }})</a>
+  {% else %}
+    <a href="{{ url_for('send_request') }}">
+      <button>Enviar Solicitud de Compra</button>
+    </a>
+  {% endif %}
+</div>
+
+<!-- Espacio de separación -->
+<div style="margin: 20px 0;"></div>
+
+<!-- Caja de búsqueda -->
+<div id="search-container" style="margin-bottom:20px;">
+  <input type="text" id="searchInput" placeholder="Buscar por nombre..." value="{{ query }}" style="width: 100%; max-width: 400px; padding: 8px; font-size: 16px;">
+</div>
+
+<!-- Espacio de separación -->
+<div style="margin: 20px 0;"></div>
+
+<!-- Tabla de herramientas -->
+<table border="1" style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Marca y Modelo</th>
+      <th>SKU</th>
+      <th>Cantidad Disponible</th>
+    </tr>
+  </thead>
+  <tbody id="toolTableBody">
+    {% for tool in tools %}
+      <tr>
+        <td><a href="{{ url_for('tool_detail', tool_id=tool.id) }}">{{ tool.name }}</a></td>
+        <td>{{ tool.brand }} {{ tool.model }}</td>
+        <td>{{ tool.SKU }}</td>
+        <td>
+          {% set count = tool.instances | selectattr('status', 'equalto', 'disponible') | list | length %}
+          {{ count }}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Incluir Fuse.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Declaración EXACTA de toolData
+    var jsonStr = '{{ tools|tojson|safe }}';
+    console.log("JSON string de tools:", jsonStr);
+    var toolData;
+    try {
+      toolData = JSON.parse(jsonStr);
+      console.log("toolData parseado correctamente:", toolData);
+    } catch (err) {
+      console.error("Error al parsear toolData:", err);
+      return;  // Detiene la ejecución si falla el parseo.
+    }
+
+    // Configuración de Fuse.js para buscar por 'name', 'brand', 'model'
+    var options = {
+      keys: ['name', 'brand', 'model'],
+      threshold: 0.4
+    };
+    var fuse = new Fuse(toolData, options);
+
+    // Obtención del input de búsqueda
+    var searchInput = document.getElementById('searchInput');
+
+    // Evento para actualizar la tabla conforme se escribe
+    searchInput.addEventListener('keyup', function(e) {
+      var query = e.target.value.trim();
+      if(query === "") {
+        updateToolTable(toolData.map(function(tool) {
+          return { item: tool };
+        }));
+      } else {
+        var result = fuse.search(query);
+        updateToolTable(result);
+      }
+    });
+
+    // Función para actualizar la tabla sin alterar el diseño original
+    function updateToolTable(results) {
+      var tbody = document.getElementById('toolTableBody');
+      tbody.innerHTML = "";
+      results.forEach(function(result) {
+        var tool = result.item;
+        var tr = document.createElement('tr');
+
+        // Columna: Nombre con enlace
+        var tdName = document.createElement('td');
+        var a = document.createElement('a');
+        a.href = "/tool/" + tool.id;
+        a.textContent = tool.name;
+        tdName.appendChild(a);
+        tr.appendChild(tdName);
+
+        // Columna: Marca y Modelo
+        var tdBrandModel = document.createElement('td');
+        tdBrandModel.textContent = tool.brand + " " + tool.model;
+        tr.appendChild(tdBrandModel);
+
+        // Columna: SKU
+        var tdSKU = document.createElement('td');
+        tdSKU.textContent = tool.SKU;
+        tr.appendChild(tdSKU);
+
+        // Columna: Cantidad Disponible
+        var tdCount = document.createElement('td');
+        var available = tool.instances.filter(function(inst) {
+          return inst.status === "disponible";
+        }).length;
+        tdCount.textContent = available;
+        tr.appendChild(tdCount);
+
+        tbody.appendChild(tr);
+      });
+    }
+  });
+</script>
+{% endblock %}
