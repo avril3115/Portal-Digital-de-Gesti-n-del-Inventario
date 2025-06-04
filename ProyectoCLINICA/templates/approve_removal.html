@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Aprobar Baja{% endblock %}
+
+{% block content %}
+<h2>Aprobar Solicitud de Baja</h2>
+<p>ID Solicitud: {{ request_data.id }}</p>
+<p>
+  Herramienta:
+  {% for t in tools %}
+    {% if t.id == request_data.tool_id %}
+      {{ t.name }}
+    {% endif %}
+  {% endfor %}
+</p>
+<p>ID Instancia: {{ request_data.instance_id }}</p>
+<p>Justificación: {{ request_data.justification }}</p>
+<form method="POST" action="{{ url_for('approve_removal', removal_id=request_data.id) }}">
+  <button type="submit">Aprobar Baja</button>
+</form>
+<a href="{{ url_for('view_removal_requests') }}"><button>Cancelar</button></a>
+{% endblock %}

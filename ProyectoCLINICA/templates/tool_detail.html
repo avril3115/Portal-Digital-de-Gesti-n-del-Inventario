@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de {{ tool.name }}{% endblock %}
+
+{% block content %}
+<h2>Detalle de la Herramienta: {{ tool.name }}</h2>
+
+<div class="mb-3">
+  <p><strong>Marca:</strong> {{ tool.brand }}</p>
+  <p><strong>Modelo:</strong> {{ tool.model }}</p>
+  <p><strong>SKU:</strong> {{ tool.SKU }}</p>
+</div>
+
+<h3>Instancias</h3>
+<table class="table table-bordered">
+  <thead class="table-light">
+    <tr>
+      <th>ID Instancia</th>
+      <th>Disponibilidad</th>
+      <th>Acción</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inst in tool.instances %}
+    <tr>
+      <td>{{ inst.instance_id }}</td>
+      <td>
+        {% if inst.status == 'en uso' %}
+          En uso por {{ inst.user }}
+        {% else %}
+          Disponible
+        {% endif %}
+      </td>
+      <td>
+        <form method="POST" action="{{ url_for('toggle_instance', tool_id=tool.id, instance_id=inst.instance_id) }}" class="d-inline">
+          {% if inst.status == 'disponible' %}
+            <button type="submit" class="btn btn-sm btn-primary">Marcar como 'En uso'</button>
+          {% elif inst.status == 'en uso' and inst.user == session.user %}
+            <button type="submit" class="btn btn-sm btn-warning">Marcar como 'Disponible'</button>
+          {% endif %}
+        </form>
+        {% if session.role == 'user' %}
+        <a href="{{ url_for('report_removal', tool_id=tool.id, instance_id=inst.instance_id) }}" class="btn btn-sm btn-danger">
+          Reportar Daño
+        </a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div class="mt-3">
+  {% if session.role == 'user' %}
+    <a href="{{ url_for('send_request', tool_id=tool.id) }}" class="btn btn-primary">Enviar Solicitud de Compra</a>
+  {% endif %}
+</div>
+{% endblock %}
