@@ -402,4 +402,4 @@ def reject_removal(removal_id):
     return redirect(url_for('view_removal_requests'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug='True')
